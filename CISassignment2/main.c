@@ -25,130 +25,122 @@
 | Due Date: per assignment
 |
 +=============================================================================*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Calculate 8 bit checksum
-unsigned long int checksum8bit(char *input)
+void printString(char* str, int len)
 {
-  int result = 0;
-  for (int i = 0; i < strlen(input); i++)
-  {
-    result += input[i];
-  }
-
-  return result;
+    int i = 0;
+    
+    while(i < len)
+    {
+      if(i % 80 == 0)
+      {
+        printf("\n");
+      }
+      printf("%c", str[i]);
+      i++;
+      if(i >= 512)
+      {
+        break;
+      }
+      
+    }
 }
 
-// Calculate 16 bit checksum
-unsigned long int checksum16bit(char *input)
+int main(int argc, char* argv[])
 {
-  int result = 0;
-  for (int i = 0; i < strlen(input);)
-  {
-    result += input[i] << 8;
-    result += (input[i + 1]);
-    i+=2;
-  }
-
-  return result;
-}
-
-// Calculate 32 bit checksum
-unsigned long int checksum32bit(char *input)
-{
-  unsigned long int result = 0;
-  for (int i = 0; i < strlen(input);)
-  {
-    result += input[i] << 24;
-    result += (input[i + 1]) << 16;
-    result += (input[i + 2]) << 8;
-    result += (input[i + 3]);
-    i+=4;
-  }
-  
-  return result;
-}
-
-// Print function, prints 80 char per line
-void printString(char *str)
-{
-  for (int i = 0; i < strlen(str); i++)
-  {
-    if (i % 80 == 0)
-    printf("\n");
-    printf("%c", str[i]);
-  }
-}
-
-
-int main(int argc, char **argv)
-{
-  // Takes in command line arguements and check them
+  // Takes in command line arguements
   char* inputFile = argv[1];
-  char* checksumsize = argv[2];
-  int checksumBits = atoi(checksumsize);
+  char* checksumSize = argv[2];
 
-  // Checks if checksumsize is valid
+  FILE* infile = fopen("i1.txt", "r"); // change i10A to inputFile
+  int checksumBits = atoi(checksumSize); // in bits
+
+  checksumBits = 8; // delete
+
+  char inputString[3000];
+  unsigned long int res8bit = 0;
+  unsigned long int res16bit = 0;
+  unsigned long int res32bit = 0;
+  
+  unsigned long checksum = 0; // %lx type unsigned long in hexadecimal
+  int characterCnt = 0;
+
+
+  // checks if checksumSize is valid
   if(checksumBits != 8 && checksumBits != 16 && checksumBits != 32)
   {
     fprintf(stderr, "Valid checksum sizes are 8, 16, or 32\n");
-    return -1;
-  }
+    return 0;
 
-  // Opening and reading the input file
-  FILE *inputfile = fopen(inputFile,"r"); // change name to inputFile
-  
-  char *input = malloc(sizeof(char) * 1024);
-  char ch = 'x';
-  int i = 0;
-
-  while (fscanf(inputfile, "%c", &ch) != EOF)
+  } else
   {
-    input[i] = ch;
-    i++;
-  }
-  input[i] = '\0';
 
-  fclose(inputfile);
+    // Readfile
+    int i = 0;
+    char ch;
+
+    while (fscanf(infile, "%c", &ch) != EOF)
+    {
+      // printf("%c", ch);
+      inputString[i] = ch;
+      i++;
+    }
+    inputString[i] = '\0';
+
+    fclose(infile);
 
 
-  // Checksum stuff
-  unsigned long int result = 0;
 
-  if(checksumBits == 8)
+    switch (checksum_size)
   {
-    result = checksum8bit(input);
-    printString(input);
+    case 8:
+    res8bit = calc8bit(inputString);
+    print80(input);
     printf("\n");
-
-    printf("%2d bit checksum is %8lx for all %4d chars\n", checksumBits, result & 0xff, (int)strlen(input));
-  
-  } else if(checksumBits == 16)
-  {
-      if (strlen(input) % 2)
-      {
-        strcat(input,"X");
-      }
-      printString(input);
-      printf("\n");
-      result = checksum16bit(input);
-      printf("%2d bit checksum is %8lx for all %4d chars\n", checksumBits, result & 0xffff, (int)strlen(input));
-
-  } else if(checksumBits == 32)
-  {
-      while (strlen(input) % 4)
-      {
-        strcat(input,"X");
-      }
-      printString(input);
-      printf("\n");
-      result = checksum32bit(input);
-      printf("%2d bit checksum is %8lx for all %4d chars\n", checksumBits, result & 0xffffffff, (int)strlen(input));
+    // Use 0xff masking to display only last 2 hex values
+    printf("%2d bit checksum is %8lx for all %4d chars\n", checksum_size, res8bit & 0xff, (int)strlen(input));
+    break;
+  case 16:
+    // Pad with a necessary X
+    if (strlen(input) % 2)
+    strcat(input,"X");
+    print80(input);
+    printf("\n");
+    res16bit = calc16bit(input);
+    // Use 0xffff masking to display only last 4 hex values
+    printf("%2d bit checksum is %8lx for all %4d chars\n", checksum_size, res16bit & 0xffff, (int)strlen(input));
+    break;
+  case 32:
+    // Pad with necessary X's
+    while (strlen(input) % 4)
+    strcat(input,"X");
+    print80(input);
+    printf("\n");
+    res32bit = calc32bit(input);
+    // Use 0xffffffff masking to display only last 8 hex values
+    printf("%2d bit checksum is %8lx for all %4d chars\n", checksum_size, res32bit & 0xffffffff, (int)strlen(input));
+    break;
   }
-  
-return 0;
+
+  }
+
+
+
+  // Prints
+  printf("\n");
+  printString(inputString, strlen(inputString));
+  printf("%2d bit checksum is %8lx for all %4d chars\n", checksumBits, checksum, characterCnt);
+
+
+
+
+
+
+  return 0;
 }
 
 /*=============================================================================
